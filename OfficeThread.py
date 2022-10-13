@@ -31,20 +31,23 @@ DATACTRLSIGNALSTAT = {"ADD": 0,
                       "GIVEBACK": 3,
                       "BORROW": 4}
 
-#专门控制数据io
-class OfficeDataCtrlThread(QThread):
-    success = pyqtSignal(list, int, int, bool)
-    error = pyqtSignal(int, bool)
 
-    def __init__(self, datactrlfun, checkfun, data, flag, pos, *args, **kwargs):
+# 专门控制数据io
+class OfficeDataCtrlThread(QThread):
+    success = pyqtSignal(list, int, int, str, bool)
+    error = pyqtSignal(list, int, int, str, bool)
+
+    def __init__(self, datactrlfun, findfun, data, flag, dataflag, pos, *args, **kwargs):
         super(OfficeDataCtrlThread, self).__init__(*args, **kwargs)
         self.flag = flag
         self.datactrlfun = datactrlfun
+        self.findfun = findfun
         self.data = data
         self.pos = pos
+        self.dataflag = dataflag
         pass
 
-    #调用数据处理函数
+    # 调用数据处理函数
     def run(self) -> None:
         if self.flag == DATACTRLSIGNALSTAT["ADD"]:
             # data_submit = {"name": name,
@@ -70,14 +73,14 @@ class OfficeDataCtrlThread(QThread):
                               "否",
                               self.data["remark"]]
 
+            if self.findfun(start=self.data["starttime"], end=self.data["endtime"], ontime=False) == []:
+                self.error.emit([], 0, self.pos, self.dataflag, False)
+
             self.datactrlfun(datasubmitlist)
-            self.success.emit(datasubmitlist, DATACTRLSIGNALSTAT["ADD"], self.pos, True)
+            self.success.emit(datasubmitlist, DATACTRLSIGNALSTAT["ADD"], self.pos, self.dataflag, True)
         else:
             print("error")
 
-        pass
-
-    def numcheck(self, starttime, endtime):
         pass
 
 

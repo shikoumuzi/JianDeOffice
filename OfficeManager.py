@@ -1,3 +1,5 @@
+import datetime
+
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QMessageBox
 from OfficeExcel import OfficeExcel as excel
@@ -24,11 +26,11 @@ class OfficeManager:
         self.searchexsit = SearchExsit(self)
         self.mainwindowsevent = MainWindowsEvent(self, "./data/user.txt")
 
-        self.excelwindows_goods = {"search":\
+        self.excelwindows_goods = {"search": \
                                        {"searchfun": self.searchexsit.searchexsit,
                                         "search_success_callback": self.searchexsit.search_success_callback,
                                         "search_error_callback": self.searchexsit.search_error_callback},
-                                   "data":\
+                                   "data": \
                                        {"datactrl_callback": self.datactrl.windows_data_ctrl,
                                         "data-ctrl_success_result": self.datactrl.windows_data_ctrl_result,
                                         "datactrl_error_result": self.datactrl.windows_data_ctrl_result},
@@ -36,7 +38,7 @@ class OfficeManager:
                                    "table_title": table_title,
                                    "height": 1228,
                                    "width": 500}
-        self.excelwindows_place = {"search":\
+        self.excelwindows_place = {"search": \
                                        {"searchfun": self.searchexsit.searchexsit,
                                         "search_success_callback": self.searchexsit.search_success_callback,
                                         "search_error_callback": self.searchexsit.search_error_callback},
@@ -92,8 +94,8 @@ class MainWindowsEvent:
 
     def ComparePwdResult(self, username: str, result: bool):
         if result is True:
-            self.parent.windows.main_windows.setSignStatus(str)
-            self.parent.windows.sign_windows.close()
+            self.parent.windows.main_windows.setSignStatus(username)
+            # self.parent.windows.sign_windows.close()
         else:
             QMessageBox.warning(self.parent.windows.main_windows, "登录失败", "请重新登录")
             self.parent.windows.sign_windows.pwd_lineedit.clear()
@@ -101,13 +103,13 @@ class MainWindowsEvent:
     def CallExcelGoodsWindows(self):
         if not self.goods_running:
             self.parent.windows.CreateExcelWindows(self.parent.excelwindows_goods)
-            self.parent.windows.\
+            self.parent.windows. \
                 excel_windows_goods.TableWrite(now_row=0, table_2index=self.parent.goods_excel.data_read())
 
     def CallExcelPlaceWindwos(self):
         if not self.place_running:
             self.parent.windows.CreateExcelWindows(self.parent.excelwindows_place)
-            self.parent.windows.\
+            self.parent.windows. \
                 excel_windows_place.TableWrite(now_row=0, table_2index=self.parent.place_excel.data_read())
 
     def CallExcelGoodsPlaceStatusWindows(self):
@@ -186,6 +188,7 @@ class SearchExsit:
 
 class DataCtrl:
     def __init__(self, parent: OfficeManager):
+        self.datasubmit = None
         self.parent = parent
 
     # 数据处理 获取数据 传入绑定事件
@@ -206,12 +209,16 @@ class DataCtrl:
         pass
 
     # 得到数据结果, 线程结果的出口
-    def windows_data_ctrl_result(self, data_result: list, flag: int, pos: int, issuccess=True):
+    def windows_data_ctrl_result(self, data_result: list, flag: int, pos: int,  dataflag:str, issuccess=True):
         print(data_result)
         if issuccess:
             if flag == DATACTRLSIGNALSTAT["ADD"]:
-                QMessageBox.information(self.parent.windows.excel_windows_goods, "提交结果", "提交成功")
-                self.parent.windows.excel_windows_goods.TableWrite(table_index=data_result)
+                if dataflag == "GOODS":
+                    QMessageBox.information(self.parent.windows.excel_windows_goods, "提交结果", "提交成功")
+                    self.parent.windows.excel_windows_goods.TableWrite(table_index=data_result)
+                else:
+                    QMessageBox.information(self.parent.windows.excel_windows_place, "提交结果", "提交成功")
+                    self.parent.windows.excel_windows_place.TableWrite(table_index=data_result)
                 pass
             elif flag == DATACTRLSIGNALSTAT["CHANGE"]:
                 pass
@@ -226,6 +233,7 @@ class DataCtrl:
         else:
             pass
         print(pos)
+        print(self.parent.windows.excel_datactrl_windows)
         self.parent.windows.excel_datactrl_windows[pos].close()
 
     # add函数的记录检查
@@ -241,25 +249,45 @@ class DataCtrl:
         #                "remark": remark,
         #                "starttime": start_date,
         #                "endtime": end_date}
+
         start_time = datasubmitlist["starttime"]
         end_time = datasubmitlist["endtime"]
-        self.parent.searchexsit.searchexsit(col="借用时间", text=datasubmitlist[start_time],)
 
-        pass
+        datetime_submit = self.__getDateTimeList(start_time_str=start_time,end_time_str=end_time)
+        datetime_excel = self.__getDateTimeList()
+
+    def __getDateTimeList(self, start_time_str: str = None, end_time_str: str = None,
+                          start_time_datetime: datetime = None, end_time_datetime: datetime = None):
+        start_datetime = None
+        end_datetime = None
+        if start_time_str is not None and end_time_str is not None:
+            start_datetime = datetime.datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
+            end_datetime = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")
+        elif start_time_datetime is not None and end_time_datetime:
+            start_datetime = start_time_datetime
+            end_datetime = end_time_datetime
+
+        ret = []
+        while start_time_datetime.__lt__(end_datetime):
+            ret.append(start_datetime)
+            start_datetime += datetime.timedelta(days=1)
+        return ret
 
     # add操作的函数入口
-    def windows_data_add_submit(self, datasubmitlist: dict, dataflag, flag, pos: int):
+    def windows_data_add_submit(self, datasubmitlist: dict, dataflag: str, flag, pos: int):
         print(datasubmitlist)
         self.datasubmit = datasubmitlist
         if dataflag == "GOODS":
             self.data_th = \
                 OfficeDataCtrlThread(datactrlfun=self.parent.goods_excel.data_write,
-                                     data=self.datasubmit, checkfun=self.windows_data_add_check,
+                                     findfun=self.parent.goods_excel.data_find_bydatetime,
+                                     data=self.datasubmit, dataflag=dataflag,
                                      flag=flag, pos=pos)
         elif dataflag == "PLACE":
             self.data_th = \
                 OfficeDataCtrlThread(datactrlfun=self.parent.place_excel.data_write,
-                                     data=self.datasubmit, checkfun=self.windows_data_add_check,
+                                     findfun=self.parent.place_excel.data_find_bydatetime,
+                                     data=self.datasubmit, dataflag=dataflag,
                                      flag=flag, pos=pos)
 
         self.data_th.success.connect(self.windows_data_ctrl_result)

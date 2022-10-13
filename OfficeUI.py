@@ -15,6 +15,14 @@ import datetime
 from OfficeThread import *
 
 
+def get_cur_info():
+    print(sys._getframe().f_code.co_filename)  # 当前文件名，可以通过__file__获得
+    print(sys._getframe(0).f_code.co_name) # 当前函数名
+    print(sys._getframe(1).f_code.co_name)  # 调用该函数的函数名字，如果没有被调用，则返回<module>
+    print(sys._getframe(0).f_lineno) #当前函数的行号
+    print(sys._getframe(1).f_lineno) # 调用该函数的行号
+
+
 class OfficeUI:
     def __init__(self, colnum, mainwindwosevent):
         self.main_windows = None
@@ -86,6 +94,7 @@ class OfficeUI:
                                             uiparent=self,
                                             pos=self.excel_datactrl_windows.__len__())
         self.excel_datactrl_windows.append(childwindows)
+        print(self.excel_datactrl_windows)
         childwindows.show()
 
     def close(self):
@@ -378,7 +387,7 @@ class ExcelSearchWindows(QWidget):
         table_layout = QHBoxLayout()
         table_widget = QTableWidget(row, col)
         # 设置横向标题文字
-        if table_title != None:
+        if table_title is not None:
             for i in range(table_title.__len__()):
                 item = QTableWidgetItem()
                 item.setText(table_title[i][0])  # 设置文字
@@ -566,7 +575,8 @@ class ExcelDataCtrlWindows(QWidget):
                        "department": department,
                        "remark": remark,
                        "starttime": start_date,
-                       "endtime": end_date}
+                       "endtime": end_date,
+                       "dataflag": self.dataflag}
 
         if self.goodslineedit is not None:
             goods = self.goodslineedit.text()
@@ -574,7 +584,6 @@ class ExcelDataCtrlWindows(QWidget):
         elif self.placecombox is not None:
             placedata = self.placecomboxdata
             data_submit["goodsorplace"] = placedata
-        pass
 
         self.datasubmitfun(datasubmitlist=data_submit,
                            flag=DATACTRLSIGNALSTAT["ADD"],
@@ -583,6 +592,7 @@ class ExcelDataCtrlWindows(QWidget):
     def close(self) -> bool:
         self.setParent(None)
         self.deleteLater()
+        print("work")
         self.uiparent.excel_datactrl_windows.pop(self.pos)
         return super(ExcelDataCtrlWindows, self).close()
 
@@ -649,6 +659,7 @@ class MainWindows(QMainWindow):
         self.userstat_label = QLabel("未登录")
         statbar = QStatusBar()
         statbar.layout().addWidget(self.userstat_label)
+        self.setStatusBar(statbar)
 
     # def resizeEvent(self, event) -> None:
     #     print(self.height(), self.width())
@@ -718,5 +729,6 @@ class MainWindows(QMainWindow):
 
         return button_layout
 
-    def setSignStatus(self, status):
-        self.username_label.setText(status)
+    def setSignStatus(self, status: str):
+        print(status)
+        self.userstat_label.setText(str(status))

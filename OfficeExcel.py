@@ -123,7 +123,7 @@ class OfficeExcel:
         i = 0
         for celldata in coldata_once:
             try:
-                #因为表格中不同数据类型不一，统一转化成str类型方便操作
+                # 因为表格中不同数据类型不一，统一转化成str类型方便操作
                 if str(celldata.value).find(str(data)) != -1:
                     find_index.append(i)
             except TypeError:
@@ -165,19 +165,37 @@ class OfficeExcel:
         #     return False
         # return False
 
-    def data_find_bydatetime(self, column_letter: str, data, start, end=None):
+    def data_find_bydatetime(self, column_letter: str = None, data=None, start=None, end=None, ontime=True):
+        """
+
+        :param column_letter: is excel column
+        :param data: data which is need to be find
+        :param start: time range start
+        :param end: time range end
+        :param ontime: if true: data which be find will be filler by time range(on time)
+                        else: will be out of time
+        :return: return be find data
+        """
+        if start is None:
+            now_datetime = datetime.datetime.now() + datetime.timedelta(days=-30)
+            start = now_datetime
         if end is None:
             now_datetime = datetime.datetime.now() + datetime.timedelta(days=30)
             end = now_datetime
 
         ret = []
-        data_find = self.data_find(column_letter=column_letter, data=data)
+        data_find = None
+        if data is not None:
+            self.data_find(column_letter=column_letter, data=data)
+        else:
+            data_find = self.data_read()
         # print(data_find)
-        for row in data_find:
-            if (self.date_compare(row[7], start).__and__
-                (self.date_compare(end, row[8]))):
-                ret.append(row)
-
+        if ontime:
+            for row in data_find:
+                if self.date_compare(row[7], start) and (self.date_compare(end, row[8])):
+                    ret.append(row)
+        else:
+            for row in data_find:
+                if self.date_compare(start, row[7]) and (self.date_compare(row[8], end)):
+                    ret.append(row)
         return ret
-
-        pass
