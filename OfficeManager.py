@@ -22,12 +22,13 @@ class OfficeManager:
     def __init__(self, table_title: list):
         self.datactrl = DataCtrl(self)
         self.searchexsit = SearchExsit(self)
-        self.mainwindowscall = MainWindowsCall(self, "./data/user.txt")
-        self.excelwindows_goods = {"search":
+        self.mainwindowsevent = MainWindowsEvent(self, "./data/user.txt")
+
+        self.excelwindows_goods = {"search":\
                                        {"searchfun": self.searchexsit.searchexsit,
                                         "search_success_callback": self.searchexsit.search_success_callback,
                                         "search_error_callback": self.searchexsit.search_error_callback},
-                                   "data":
+                                   "data":\
                                        {"datactrl_callback": self.datactrl.windows_data_ctrl,
                                         "data-ctrl_success_result": self.datactrl.windows_data_ctrl_result,
                                         "datactrl_error_result": self.datactrl.windows_data_ctrl_result},
@@ -35,12 +36,25 @@ class OfficeManager:
                                    "table_title": table_title,
                                    "height": 1228,
                                    "width": 500}
+        self.excelwindows_place = {"search":\
+                                       {"searchfun": self.searchexsit.searchexsit,
+                                        "search_success_callback": self.searchexsit.search_success_callback,
+                                        "search_error_callback": self.searchexsit.search_error_callback},
+                                   "data": \
+                                       {"datactrl_callback": self.datactrl.windows_data_ctrl,
+                                        "data-ctrl_success_result": self.datactrl.windows_data_ctrl_result,
+                                        "datactrl_error_result": self.datactrl.windows_data_ctrl_result},
+                                   "dataflag": "PLACE",
+                                   "table_title": table_title,
+                                   "height": 1228,
+                                   "width": 500}
 
         # self.setCallBack(success=self.search_success_callback, error=self.search_error_callback)
-        self.windows = OfficeUI(table_title.__len__())
+        self.windows = OfficeUI(table_title.__len__(), mainwindwosevent=self.mainwindowsevent)
 
         # self.windows.CreateExcelWindows(excelwindows_arg=self.excelwindows_goods)
         self.windows.CreateMainWinows(image_path="微信图片_20221008222518.jpg")
+        # self.windows.CreateFunctionWindows()
 
         self.goods_excel = excel(title_data=title_data_goods, filepath=".\\data\\OfficeGoods.xlsx")
         self.place_excel = excel(title_data=title_data_goods, filepath=".\\data\\OfficePlace.xlsx")
@@ -61,14 +75,13 @@ class OfficeManager:
         self.table_title = table_title
 
 
-class MainWindowsCall:
+class MainWindowsEvent:
     def __init__(self, parent: OfficeManager, usermessage_path: str):
         self.parent = parent
         self.cryptuserdata = CryptData(usermessage_path)
         self.compare_th = None
-
-    def CallSignInWindows(self):
-        self.parent.windows.CreateSignInWindows(self.ComparePwd)
+        self.goods_running = False
+        self.place_running = False
 
     def ComparePwd(self, username, pwd):
         self.compare_th = OfficeCryptDataThread(checkcryptedfun=self.cryptuserdata.isTrue,
@@ -82,20 +95,39 @@ class MainWindowsCall:
             self.parent.windows.main_windows.setSignStatus(str)
             self.parent.windows.sign_windows.close()
         else:
-            QMessageBox(self.parent.windows.main_windows, "登录失败", "请重新登录")
+            QMessageBox.warning(self.parent.windows.main_windows, "登录失败", "请重新登录")
             self.parent.windows.sign_windows.pwd_lineedit.clear()
 
+    def CallExcelGoodsWindows(self):
+        if not self.goods_running:
+            self.parent.windows.CreateExcelWindows(self.parent.excelwindows_goods)
+            self.parent.windows.\
+                excel_windows_goods.TableWrite(now_row=0, table_2index=self.parent.goods_excel.data_read())
+
+    def CallExcelPlaceWindwos(self):
+        if not self.place_running:
+            self.parent.windows.CreateExcelWindows(self.parent.excelwindows_place)
+            self.parent.windows.\
+                excel_windows_place.TableWrite(now_row=0, table_2index=self.parent.place_excel.data_read())
+
+    def CallExcelGoodsPlaceStatusWindows(self):
+        pass
+
+    def CloseSystem(self):
+        del self.parent.windows
 
 
 class CryptData:
     def __init__(self, usermessage_path: str):
         self.md5 = hashlib.md5("shikoumuziinjiande".encode("utf-8"))
         file = open(usermessage_path)
-        usersmeaaage = file.readlines()
+        usersmeassges = file.readlines()
         self.users = {}
-        for usermeaaage in usersmeaaage:
-            if usermeaaage.__len__() == 2:
-                self.users[usermeaaage[0]] = usermeaaage[1]
+        for usermeassge in usersmeassges:
+            user_temp = usermeassge.split(" ")
+            self.users[user_temp[0]] = user_temp[1][:-1]
+        # print(usersmeassges)
+        # print(self.users)
         file.close()
 
     def __getResult(self, string: str):
@@ -103,7 +135,13 @@ class CryptData:
         return self.md5.hexdigest()
 
     def isTrue(self, username, pwd):
-        return self.users[username] == self.__getResult(pwd)
+        try:
+            ret = (self.users[username] == self.__getResult(pwd))
+            # print(username, self.__getResult(pwd))
+            return ret
+        except:
+            # print(username, self.__getResult(pwd))
+            return False
 
 
 class SearchExsit:
@@ -111,7 +149,7 @@ class SearchExsit:
         self.parent = parent
 
     # 数据查询模块
-    def searchexsit(self, col: int, text, starttime, dataflag="GOODS", endtime=None):
+    def searchexsit(self, col, text, starttime, dataflag="GOODS", endtime=None):
         print(col, text)
         i = 0
         for x in self.parent.table_title:
@@ -119,7 +157,7 @@ class SearchExsit:
                 break
             i += 1
         col_letter = chr(ord('A') + i)
-        print(col_letter)
+        # print(col_letter)
         search_result = None
         if dataflag == "GOODS":
             search_result = self.parent.goods_excel. \
@@ -132,9 +170,7 @@ class SearchExsit:
         if search_result is not None:
             return search_result
         else:
-            return None
-
-        pass
+            return []
 
     def search_success_callback(self, data_2index: list):
         # 更新窗口显示信息
@@ -192,7 +228,7 @@ class DataCtrl:
         print(pos)
         self.parent.windows.excel_datactrl_windows[pos].close()
 
-    #add函数的记录检查
+    # add函数的记录检查
     def windows_data_add_check(self, datasubmitlist: dict):
 
         # data_submit = {"name": name,
@@ -207,9 +243,11 @@ class DataCtrl:
         #                "endtime": end_date}
         start_time = datasubmitlist["starttime"]
         end_time = datasubmitlist["endtime"]
+        self.parent.searchexsit.searchexsit(col="借用时间", text=datasubmitlist[start_time],)
 
         pass
-    #add操作的函数入口
+
+    # add操作的函数入口
     def windows_data_add_submit(self, datasubmitlist: dict, dataflag, flag, pos: int):
         print(datasubmitlist)
         self.datasubmit = datasubmitlist

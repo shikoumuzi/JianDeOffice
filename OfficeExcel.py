@@ -172,7 +172,7 @@ class OfficeExcel:
 
         ret = []
         data_find = self.data_find(column_letter=column_letter, data=data)
-        print(data_find)
+        # print(data_find)
         for row in data_find:
             if (self.date_compare(row[7], start).__and__
                 (self.date_compare(end, row[8]))):

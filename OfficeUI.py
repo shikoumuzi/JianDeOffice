@@ -1,17 +1,111 @@
 import sys
 import PySide2
 
-from PyQt5.QtCore import Qt, QDate, QEvent
+from PyQt5.QtCore import Qt, QDate, QEvent, QRect, QSize
 from PyQt5.QtWidgets \
     import QApplication, QWidget, QDesktopWidget, QHBoxLayout, QVBoxLayout, \
     QPushButton, QLineEdit, QTableWidget, QTableWidgetItem, QLabel, \
     QMessageBox, QComboBox, QMainWindow, QCalendarWidget, QDateEdit, QSizePolicy, \
-    QDateTimeEdit
+    QDateTimeEdit, QGroupBox, QStatusBar, QGridLayout
 
 from PyQt5.QtGui import QImage, QPalette, QPixmap
+import PyQt5.QtGui
 
 import datetime
 from OfficeThread import *
+
+
+class OfficeUI:
+    def __init__(self, colnum, mainwindwosevent):
+        self.main_windows = None
+        self.excel_windows_goods = None
+        self.excel_windows_place = None
+        self.colnum = colnum
+        self.sign_windows = None
+        self.excel_search_windows = []
+        self.excel_datactrl_windows = []
+        self.mainwindowsevent = mainwindwosevent
+
+    def CreateSignInWindows(self):
+        self.sign_windows = SignInWindows(cryptedfun=self.mainwindowsevent.ComparePwd)
+        return self.sign_windows
+
+    def CreateMainWinows(self, image_path):
+        buttonarg = {"places_excel": self.mainwindowsevent.CallExcelPlaceWindwos,
+                     "goods_excel": self.mainwindowsevent.CallExcelGoodsWindows,
+                     "goods_place_status": self.mainwindowsevent.CallExcelGoodsPlaceStatusWindows,
+                     "close_system": self.mainwindowsevent.CloseSystem}
+        self.main_windows = MainWindows(parent=self, image_path=image_path, buttonfun=buttonarg)
+
+        self.main_windows.show()
+        pass
+
+    def CreateExcelWindows(self, excelwindows_arg: dict):
+        if excelwindows_arg["dataflag"] == "GOODS":
+            self.excel_windows_goods \
+                = ExcelWindows(searchfun=excelwindows_arg["search"]["searchfun"],
+                               search_success_callback=excelwindows_arg["search"]["search_success_callback"],
+                               search_error_callback=excelwindows_arg["search"]["search_error_callback"],
+                               datactrl_callback=excelwindows_arg["data"]["datactrl_callback"],
+                               datactrl_success_result=excelwindows_arg["data"]["data-ctrl_success_result"],
+                               datactrl_error_result=excelwindows_arg["data"]["datactrl_error_result"],
+                               dataflag=excelwindows_arg["dataflag"],
+                               table_title=excelwindows_arg["table_title"],
+                               height=excelwindows_arg["height"],
+                               width=excelwindows_arg["width"])
+            self.excel_windows_goods.show()
+        elif excelwindows_arg["dataflag"] == "PLACE":
+            self.excel_windows_place \
+                = ExcelWindows(searchfun=excelwindows_arg["search"]["searchfun"],
+                               search_success_callback=excelwindows_arg["search"]["search_success_callback"],
+                               search_error_callback=excelwindows_arg["search"]["search_error_callback"],
+                               datactrl_callback=excelwindows_arg["data"]["datactrl_callback"],
+                               datactrl_success_result=excelwindows_arg["data"]["data-ctrl_success_result"],
+                               datactrl_error_result=excelwindows_arg["data"]["datactrl_error_result"],
+                               dataflag=excelwindows_arg["dataflag"],
+                               table_title=excelwindows_arg["table_title"],
+                               height=excelwindows_arg["height"],
+                               width=excelwindows_arg["width"])
+            self.excel_windows_place.show()
+
+    def CreateExcelSearchWindows(self, windowstitle: str, tabtle_title: list, data_2index: list):
+        childwindows = ExcelSearchWindows(uiparent=self,
+                                          table_title=tabtle_title,
+                                          windowstitle=windowstitle,
+                                          pos=self.excel_search_windows.__len__(),
+                                          row=data_2index.__len__(),
+                                          col=self.colnum)
+        self.excel_search_windows.append(childwindows)
+        childwindows.TableWrite(table_2index=data_2index)
+        childwindows.show()
+
+    def CreateExcelDataCtrlWindows(self, datasubmitfun, dataflag):
+        childwindows = ExcelDataCtrlWindows(datasubmitfun=datasubmitfun,
+                                            dataflag=dataflag,
+                                            windowsparnet=self.excel_windows_goods,
+                                            uiparent=self,
+                                            pos=self.excel_datactrl_windows.__len__())
+        self.excel_datactrl_windows.append(childwindows)
+        childwindows.show()
+
+    def close(self):
+        if self.excel_datactrl_windows.__len__() != 0:
+            for windows in self.excel_datactrl_windows:
+                windows.close()
+        if self.excel_search_windows.__len__() != 0:
+            for windows in self.excel_search_windows:
+                windows.close()
+        if self.sign_windows is not None:
+            self.sign_windows.close()
+        if self.excel_windows_goods is not None:
+            self.excel_windows_goods.close()
+        if self.excel_windows_goods is not None:
+            self.excel_windows_place.close()
+        if self.main_windows is not None:
+            self.main_windows.close()
+
+    # def __del__(self):
+    #     self.close()
 
 
 class ExcelWindows(QWidget):
@@ -23,7 +117,7 @@ class ExcelWindows(QWidget):
                  datactrl_success_result,
                  datactrl_error_result,
                  dataflag,
-                 table_title: list, height=1227, width=500):
+                 table_title: list, height=1227, width=600):
         super().__init__()
 
         # 声明未定义的变量以及部分继承的变量
@@ -79,7 +173,7 @@ class ExcelWindows(QWidget):
     def __FormInit(self, table_title):
         # 2、创建上面搜索框布局
         form_layout = QHBoxLayout()
-
+        print(table_title)
         table_datas = []
         for data in table_title:
             table_datas.append(data[0])
@@ -134,6 +228,7 @@ class ExcelWindows(QWidget):
         text = self.txt_search_data.text()
         coltime = self.col_time_combox.currentText()
         colletter = self.col_letter_combox.currentText()
+        print(self.col_letter_combox.currentText())
         self.excel_th = OfficeSearchThread(searchfun=self.searchfun_callback,
                                            col=colletter, time=self.search_time(coltime),
                                            dataflag=self.dataflag, text=text)
@@ -399,7 +494,7 @@ class ExcelDataCtrlWindows(QWidget):
         bottom_submit.clicked.connect(self.datasubmit)
 
         layout.addWidget(bottom_submit)
-        self.resize(300, 300)
+        self.resize(300, 400)
         self.setLayout(layout)
 
     # 做拦截事件，执行enter提交
@@ -499,16 +594,23 @@ class SignInWindows(QWidget):
         self.setWindowTitle("登录")
 
         layout = QVBoxLayout()
+        self.title = QLabel("登录")
         self.username_lineedit = QLineEdit()
         self.pwd_lineedit = QLineEdit()
-        self.pwd_lineedit.hide()
-        submit_button = QPushButton("提交")
-        submit_button.clicked.connect(self.SubmitUserMessahe)
 
+        submit_button = QPushButton("提交")
+        submit_button.clicked.connect(self.SubmitUserMessage)
+
+        layout.addWidget(self.title)
         layout.addWidget(self.username_lineedit)
         layout.addWidget(self.pwd_lineedit)
         layout.addWidget(submit_button)
+        layout.setAlignment(Qt.AlignCenter)
         self.setLayout(layout)
+        self.setFixedSize(QSize(400, 400))
+        self.setMaximumSize(QSize(400, 600))
+        self.setMinimumSize(0, 0)
+        # self.resize(300, 400)
 
     def SubmitUserMessage(self):
         username = self.username_lineedit.text()
@@ -517,137 +619,104 @@ class SignInWindows(QWidget):
 
 
 class MainWindows(QMainWindow):
-    def __init__(self, image_path,
-                 goods_begin, place_begin,
-                 signin_begin, close_end):
+    def __init__(self, buttonfun: dict,
+                 parent: OfficeUI, image_path, ):
         super(MainWindows, self).__init__()
-
+        self.parent = parent
         # 主界面必须内嵌一个中心widget 才能够调用
-        self.centralwidget = QWidget(self)
-        self.setCentralWidget(self.centralwidget)
+        centralwidget = QWidget(self)
 
         self.setWindowTitle("JianDeOffice")
         # 窗口尺寸
-        self.resize(1227, 500)
+        self.resize(1227, 600)
+        self.setMinimumSize(860, 480)
         # 窗口位置
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
 
         layout = QHBoxLayout()
-
         self.image = QImage(image_path)
         self.image_label = self.LogoInit()
-        self.image_label.setGeometry(0, 0, 400, 400)
         layout.addWidget(self.image_label)
 
-        button_layout = self.AllButtonInit(goods_begin=goods_begin, place_begin=place_begin,
-                                            signin_begin=signin_begin, close_end=close_end)
-
-
-        self.username_label = QLabel("未登录")
-        button_layout.addWidget(self.username_label)
-        layout.addStretch()
+        button_layout = self.AllButtonInit(buttonfun)
         layout.addLayout(button_layout)
-        self.centralwidget.setLayout(layout)
+
+        centralwidget.setLayout(layout)
+        self.setCentralWidget(centralwidget)
+
+        self.userstat_label = QLabel("未登录")
+        statbar = QStatusBar()
+        statbar.layout().addWidget(self.userstat_label)
+
+    # def resizeEvent(self, event) -> None:
+    #     print(self.height(), self.width())
+    #     return super().resizeEvent(event)
+
+    def event(self, event) -> bool:
+        if event.type() == QEvent.KeyPress and event.key() in (
+                Qt.Key_Enter,
+                Qt.Key_Return,
+        ):
+            self.focusNextPrevChild(True)
+        return super().event(event)
 
     def LogoInit(self):
         image_label = QLabel()
-        image_label.setBackgroundRole(QPalette.Base)
+        # image_label.setBackgroundRole(QPalette.Base)
         image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        image_label.setScaledContents(True)
-        image_label.setPixmap(QPixmap.fromImage(self.image))
+        image_label.setScaledContents(True)  # 设立自适应长宽高
+        image_label.setGeometry(QRect(0, 0, 400, 400))
+        image_label.setText("")
+        image_label.setObjectName("image_label")
+        image_label.setPixmap(QPixmap(self.image).scaled(400, 400))
+        # 需要在这里设置固定值后修改最大最小值，有时候resize会失效
+        image_label.setFixedSize(QSize(400, 400))
+        image_label.setMaximumSize(QSize(400, 400))
+        image_label.setMinimumSize(QSize(100, 100))
         return image_label
 
     def ButtonInit(self, buttonname, connectfun):
         button = QPushButton(buttonname)
-        # button.clicked.connect(connectfun)
+        button.resize(50, 50)
+        button.clicked.connect(connectfun)
         return button
 
-    def AllButtonInit(self,
-                      goods_begin, place_begin,
-                      signin_begin, close_end):
+    def AllButtonInit(self, button_arg: dict):
         button_layout = QVBoxLayout()
+        button_layout.addWidget(QLabel())
         button_layout.addStretch()
+
+        signin_layout = QHBoxLayout()
+        signin_lineedit = self.parent.CreateSignInWindows()
+        signin_layout.addWidget(signin_lineedit)
+
+        button_layout.addLayout(signin_layout)
+        button_layout.addStretch()
+        # buttonarg = {"places_excel":
+        #              "goods_excel":
+        #              "goods_place_status":
+        #              "close_system":
         office_basework_layout = QHBoxLayout()
-        button_goods = self.ButtonInit(buttonname="物资", connectfun=goods_begin)
-        button_place = self.ButtonInit(buttonname="场地", connectfun=place_begin)
-        button_goods.resize(50, 30)
-        button_place.resize(50, 30)
+        button_goods = self.ButtonInit(buttonname="物资登记", connectfun=button_arg["goods_excel"])
+        button_place = self.ButtonInit(buttonname="场地登记", connectfun=button_arg["places_excel"])
+
         office_basework_layout.addWidget(button_goods)
         office_basework_layout.addWidget(button_place)
 
         software_beasework_layout = QHBoxLayout()
-        button_sigin = self.ButtonInit(buttonname="登录", connectfun=signin_begin)
-        button_close = self.ButtonInit(buttonname="关闭", connectfun=close_end)
-        button_sigin.resize(50, 30)
-        button_close.resize(50, 30)
+        button_sigin = self.ButtonInit(buttonname="物资统计", connectfun=button_arg["goods_place_status"])
+        button_close = self.ButtonInit(buttonname="退出系统", connectfun=button_arg["close_system"])
+
         software_beasework_layout.addWidget(button_sigin)
         software_beasework_layout.addWidget(button_close)
 
         button_layout.addLayout(office_basework_layout)
         button_layout.addLayout(software_beasework_layout)
+        button_layout.addStretch()
+
         return button_layout
 
     def setSignStatus(self, status):
         self.username_label.setText(status)
-
-
-class OfficeUI:
-    def __init__(self, colnum):
-        self.main_windows = None
-        self.excel_windows_goods = None
-        self.excel_windows_place = None
-        self.colnum = colnum
-
-        self.sign_windows = None
-        self.excel_search_windows = []
-        self.excel_datactrl_windows = []
-
-    def CreateSignInWindows(self, cryptedfun):
-        self.sign_windows = SignInWindows(cryptedfun=cryptedfun)
-        self.sign_windows.show()
-
-    def CreateMainWinows(self, image_path,
-                         goods_begin=None, place_begin=None,
-                         signin_begin=None, close_end=None):
-        self.main_windows = MainWindows(image_path=image_path,
-                                        goods_begin=goods_begin, place_begin=place_begin,
-                                        signin_begin=signin_begin, close_end=close_end)
-        self.main_windows.show()
-        pass
-
-    def CreateExcelWindows(self, excelwindows_arg: dict):
-        self.excel_windows_goods \
-            = ExcelWindows(searchfun=excelwindows_arg["search"]["searchfun"],
-                           search_success_callback=excelwindows_arg["search"]["search_success_callback"],
-                           search_error_callback=excelwindows_arg["search"]["search_error_callback"],
-                           datactrl_callback=excelwindows_arg["data"]["datactrl_callback"],
-                           datactrl_success_result=excelwindows_arg["data"]["datactrl_success_result"],
-                           datactrl_error_result=excelwindows_arg["data"]["datactrl_error_result"],
-                           dataflag=excelwindows_arg["dataflag"],
-                           table_title=excelwindows_arg["table_title"],
-                           height=excelwindows_arg["height"],
-                           width=excelwindows_arg["width"])
-
-    def CreateExcelSearchWindows(self, windowstitle: str, tabtle_title: list, data_2index: list):
-        childwindows = ExcelSearchWindows(uiparent=self,
-                                          table_title=tabtle_title,
-                                          windowstitle=windowstitle,
-                                          pos=self.excel_search_windows.__len__(),
-                                          row=data_2index.__len__(),
-                                          col=self.colnum)
-        self.excel_search_windows.append(childwindows)
-        childwindows.TableWrite(table_2index=data_2index)
-        childwindows.show()
-
-    def CreateExcelDataCtrlWindows(self, datasubmitfun, dataflag):
-        childwindows = ExcelDataCtrlWindows(datasubmitfun=datasubmitfun,
-                                            dataflag=dataflag,
-                                            windowsparnet=self.excel_windows_goods,
-                                            uiparent=self,
-                                            pos=self.excel_datactrl_windows.__len__())
-        self.excel_datactrl_windows.append(childwindows)
-        childwindows.show()
-
-    pass
