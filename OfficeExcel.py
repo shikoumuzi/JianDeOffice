@@ -112,6 +112,30 @@ class OfficeExcel:
             ret.append(row_temp)
         return ret
 
+    def data_read_ontime(self, goods_places: list, start: datetime, end: datetime):
+        '''
+
+        :param goods_places: input goods message (name and num) or place message (name and num)
+        :param start: start time
+        :param end: end time
+        :return: this function will return a list of goods or place on the range of time bewteen start and end
+        other: you just can use this function for goods_excel or place_excel, can not use in goods_status_excel
+        '''
+        alldata = self.data_read()
+        rets_str = []
+        for row in alldata:
+            for goods_place in goods_places:
+                if row[6].find(goods_place) and \
+                        (self.date_compare(start, row[7]) and self.date_compare(row[8], start)) \
+                        or (self.date_compare(end, row[7]) and self.date_compare(row[8], end)):
+                    rets_str.append(row[6].split(" "))
+        ret_name_num = []
+        for ret_str in rets_str:
+            for name_num in ret_str:
+                ret_name_num.append(name_num.split("*"))
+        del ret_str
+        return ret_name_num
+
     def data_find(self, column_letter: str, data, getpos=False):
         find_row = []
         find_index = []
@@ -195,7 +219,9 @@ class OfficeExcel:
                 if self.date_compare(row[7], start) and (self.date_compare(end, row[8])):
                     ret.append(row)
         else:
+            # 返回查找范围内的冲突选项
             for row in data_find:
-                if self.date_compare(start, row[7]) and (self.date_compare(row[8], end)):
+                if (self.date_compare(start, row[7]) and (self.date_compare(row[8], start))) \
+                        or (self.date_compare(end, row[7]) and (self.date_compare(row[8], end))):
                     ret.append(row)
         return ret

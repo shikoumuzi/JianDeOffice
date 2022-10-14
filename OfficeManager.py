@@ -6,6 +6,7 @@ from OfficeExcel import OfficeExcel as excel
 from OfficeUI import OfficeUI
 from OfficeThread import *
 import hashlib
+from OfficeLog import OfficeLog
 
 title_data_goods = \
     {"A1": "班级", "B1": "姓名", "C1": "学号",
@@ -22,6 +23,8 @@ title_data_place = \
 
 class OfficeManager:
     def __init__(self, table_title: list):
+        self.now_user = ""
+        self.log = OfficeLog()
         self.datactrl = DataCtrl(self)
         self.searchexsit = SearchExsit(self)
         self.mainwindowsevent = MainWindowsEvent(self, "./data/user.txt")
@@ -80,7 +83,7 @@ class OfficeManager:
 class MainWindowsEvent:
     def __init__(self, parent: OfficeManager, usermessage_path: str):
         self.parent = parent
-        self.cryptuserdata = CryptData(usermessage_path)
+        self.cryptuserdata = CryptData(usermessage_path, parent)
         self.compare_th = None
         self.goods_running = False
         self.place_running = False
@@ -120,7 +123,8 @@ class MainWindowsEvent:
 
 
 class CryptData:
-    def __init__(self, usermessage_path: str):
+    def __init__(self, usermessage_path: str, parent: OfficeManager):
+        self.parent = parent
         self.md5 = hashlib.md5("shikoumuziinjiande".encode("utf-8"))
         file = open(usermessage_path)
         usersmeassges = file.readlines()
@@ -140,6 +144,8 @@ class CryptData:
         try:
             ret = (self.users[username] == self.__getResult(pwd))
             # print(username, self.__getResult(pwd))
+            self.parent.now_user = username
+            self.parent.log.Log(username, ["Resiger"])
             return ret
         except:
             # print(username, self.__getResult(pwd))
@@ -209,7 +215,7 @@ class DataCtrl:
         pass
 
     # 得到数据结果, 线程结果的出口
-    def windows_data_ctrl_result(self, data_result: list, flag: int, pos: int,  dataflag:str, issuccess=True):
+    def windows_data_ctrl_result(self, data_result: list, flag: int, pos: int, dataflag: str, issuccess=True):
         print(data_result)
         if issuccess:
             if flag == DATACTRLSIGNALSTAT["ADD"]:
@@ -236,8 +242,15 @@ class DataCtrl:
         print(self.parent.windows.excel_datactrl_windows)
         self.parent.windows.excel_datactrl_windows[pos].close()
 
+    def windows_data_write(self, data: list, dataflag: str):
+        if dataflag == "GOODS":
+            self.parent.goods_excel.data_write(data)
+        elif dataflag == "PLACE":
+            self.parent.place_excel.data_write(data)
+        self.parent.log.Log(self.parent.now_user, data)
+
     # add函数的记录检查
-    def windows_data_add_check(self, datasubmitlist: dict):
+    def windows_data_add_check(self, datasubmitlist: dict, dataflag: str):
 
         # data_submit = {"name": name,
         #                "class": class_name,
@@ -250,11 +263,33 @@ class DataCtrl:
         #                "starttime": start_date,
         #                "endtime": end_date}
 
-        start_time = datasubmitlist["starttime"]
-        end_time = datasubmitlist["endtime"]
+        start_datetime = datetime.datetime.strptime(datasubmitlist["starttime"], "%Y-%m-%d %H:%M:%S")
+        end_datetime = datetime.datetime.strptime(datasubmitlist["endtime"], "%Y-%m-%d %H:%M:%S")
 
-        datetime_submit = self.__getDateTimeList(start_time_str=start_time,end_time_str=end_time)
-        datetime_excel = self.__getDateTimeList()
+        if dataflag == "GOODS":
+            errorgoodslist = []
+            # 表示物资和对应数量的字符串的列表
+            goodsnum_str_list = datasubmitlist["goodsorplace"].split(";")
+            # 表示物资和对应数量的列表的列表
+            goodsnum_list_list = []
+            for goods in goodsnum_str_list:
+                goodsnum_list_list.append(goods.split("*"))
+
+            goods_name_list = []
+            for goods in goodsnum_str_list:
+                goods_name_list.append(goods[0])
+
+            goods_ontime = self.parent. \
+                goods_excel.data_read_ontime(goods_places=goods_name_list,
+                                             start=start_datetime, end=end_datetime)
+
+            if goods_ontime == []:
+                return errorgoodslist, False
+            else:
+                return goodsnum_list_list, True
+            pass
+        elif dataflag == "PLACE":
+            pass
 
     def __getDateTimeList(self, start_time_str: str = None, end_time_str: str = None,
                           start_time_datetime: datetime = None, end_time_datetime: datetime = None):
@@ -280,13 +315,13 @@ class DataCtrl:
         if dataflag == "GOODS":
             self.data_th = \
                 OfficeDataCtrlThread(datactrlfun=self.parent.goods_excel.data_write,
-                                     findfun=self.parent.goods_excel.data_find_bydatetime,
+                                     checkfun=self.windows_data_add_check,
                                      data=self.datasubmit, dataflag=dataflag,
                                      flag=flag, pos=pos)
         elif dataflag == "PLACE":
             self.data_th = \
                 OfficeDataCtrlThread(datactrlfun=self.parent.place_excel.data_write,
-                                     findfun=self.parent.place_excel.data_find_bydatetime,
+                                     checkfun=self.windows_data_add_check,
                                      data=self.datasubmit, dataflag=dataflag,
                                      flag=flag, pos=pos)
 

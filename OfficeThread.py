@@ -37,11 +37,11 @@ class OfficeDataCtrlThread(QThread):
     success = pyqtSignal(list, int, int, str, bool)
     error = pyqtSignal(list, int, int, str, bool)
 
-    def __init__(self, datactrlfun, findfun, data, flag, dataflag, pos, *args, **kwargs):
+    def __init__(self, datactrlfun, checkfun, data, flag, dataflag, pos, *args, **kwargs):
         super(OfficeDataCtrlThread, self).__init__(*args, **kwargs)
         self.flag = flag
         self.datactrlfun = datactrlfun
-        self.findfun = findfun
+        self.checkfun = checkfun
         self.data = data
         self.pos = pos
         self.dataflag = dataflag
@@ -73,8 +73,9 @@ class OfficeDataCtrlThread(QThread):
                               "否",
                               self.data["remark"]]
 
-            if self.findfun(start=self.data["starttime"], end=self.data["endtime"], ontime=False) == []:
+            if self.checkfun(data = datasubmitlist, dataflag=self.dataflag) == []:
                 self.error.emit([], 0, self.pos, self.dataflag, False)
+                return
 
             self.datactrlfun(datasubmitlist)
             self.success.emit(datasubmitlist, DATACTRLSIGNALSTAT["ADD"], self.pos, self.dataflag, True)
