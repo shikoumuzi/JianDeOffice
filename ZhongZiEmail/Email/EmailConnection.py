@@ -4,13 +4,13 @@ from EmailOperator import EmailOperator
 
 
 class EmailConnection:
-    def __init__(self):
+    def __init__(self, passphrase: str):
         self.step = None
         self.username: str = ""
         self.passswd: str = ""
         key_pair = RSA.generate(4096)
         pem_format = 'PEM'
-        self.base_key = 'ZhongZi'
+        self.base_key = passphrase
         self.public_key = key_pair.public_key().exportKey(pem_format, self.base_key)
         self.private_key = key_pair.exportKey(pem_format, self.base_key)
         self.encode_format = 'ISO-8859-1'
@@ -68,7 +68,7 @@ class EmailConnection:
         return 1
 
 
-connect = EmailConnection()
-connect.setUser("qq", "muzi", "muzi")
-connect.getUser()
-connect.connection()
+# connect = EmailConnection()
+# connect.setUser("qq", "muzi", "muzi")
+# connect.getUser()
+# connect.connection()
