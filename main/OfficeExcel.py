@@ -75,7 +75,6 @@ class OfficeExcel:
         if sheetname != None:
             self.ws = self.wb.get_sheet_by_name(sheetname)
             return True
-        pass
 
     def cell_write(self, data: str, col: int, row: int):
         self.ws[(self.column_letter[col + 1] + str(row))] = data
@@ -84,7 +83,6 @@ class OfficeExcel:
         if isadd:
             date_now = datetime.datetime.now()
             data_row.append(date_now.__format__("%Y%m%d-%H%M%S"))
-            pass
         if now_row == 0:
             now_row = str(self.ws.max_row + 1)
         for i in range(0, data_row.__len__()):
@@ -92,7 +90,6 @@ class OfficeExcel:
             self.ws[self.column_letter[i] + now_row].font = self.font
             self.ws[self.column_letter[i] + now_row].alignment = self.align
         self.wb.save(self.filepath)
-        pass
 
     def datas_write(self, data_2index: list):
         for data_row in data_2index:
@@ -125,7 +122,7 @@ class OfficeExcel:
         rets_str = []
         for row in alldata:
             for goods_place in goods_places:
-                if row[6].find(goods_place) and \
+                if row[10] == "否" and row[6].find(goods_place) and \
                         (self.date_compare(start, row[7]) and self.date_compare(row[8], start)) \
                         or (self.date_compare(end, row[7]) and self.date_compare(row[8], end)):
                     rets_str.append(row[6].split(" "))

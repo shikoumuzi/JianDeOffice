@@ -279,14 +279,23 @@ class DataCtrl:
             for goods in goodsnum_str_list:
                 goods_name_list.append(goods[0])
 
+            # 获取所有冲突的记录
             goods_ontime = self.parent. \
                 goods_excel.data_read_ontime(goods_places=goods_name_list,
                                              start=start_datetime, end=end_datetime)
+            goods_status = []
+            for goods in goods_ontime:
+                goods_status.append([goods[0]] + self.parent.goods_num_dict[goods[0]])
+
+            # 检查是否大于能提供的数量
+
 
             if goods_ontime == []:
-                return errorgoodslist, False
-            else:
                 return goodsnum_list_list, True
+            else: # 如果有冲突 则返回能够提供的数量
+
+                # for goodsnum_list_list
+                return errorgoodslist, False
             pass
         elif dataflag == "PLACE":
             pass

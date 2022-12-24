@@ -72,8 +72,8 @@ class OfficeDataCtrlThread(QThread):
                               "否",
                               "否",
                               self.data["remark"]]
-
-            if self.checkfun(data = datasubmitlist, dataflag=self.dataflag) == []:
+            check_result = self.checkfun(data=datasubmitlist, dataflag=self.dataflag)
+            if not check_result[1]:
                 self.error.emit([], 0, self.pos, self.dataflag, False)
                 return
 
