@@ -1,6 +1,6 @@
 import poplib
 import smtplib
-from Email import SentEmail
+from EmailType import *
 from email.parser import Parser
 from email.header import decode_header
 from email.utils import parseaddr
@@ -31,4 +31,3 @@ class EmailOperator:
 
     def receive(self):
         pass
-

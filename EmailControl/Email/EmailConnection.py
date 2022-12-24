@@ -4,18 +4,18 @@ from EmailOperator import EmailOperator
 
 
 class EmailConnection:
-    def __init__(self):
+    def __init__(self, passphrase: str):
         self.step = None
         self.username: str = ""
         self.passswd: str = ""
         key_pair = RSA.generate(4096)
         pem_format = 'PEM'
-        self.base_key = 'ZhongZi'
+        self.base_key = passphrase
         self.public_key = key_pair.public_key().exportKey(pem_format, self.base_key)
         self.private_key = key_pair.exportKey(pem_format, self.base_key)
         self.encode_format = 'ISO-8859-1'
-        self.user_name_path = "../Config/usermessage.username"
-        self.user_pwd_path = "../Config/usermessage.password"
+        self.user_name_path = "Config/usermessage.username"
+        self.user_pwd_path = "Config/usermessage.password"
         open('../Config/public_key.pem', 'wb+').write(self.public_key)
         open('../Config/private_key.pem', 'wb+').write(self.private_key)
         self.server_address = {"qq": ("pop.qq.com:110", "smtp.qq.com:25"),
@@ -67,8 +67,9 @@ class EmailConnection:
             decode(self.encode_format)
         return 1
 
-
-connect = EmailConnection()
-connect.setUser("qq", "muzi", "muzi")
-connect.getUser()
-connect.connection()
+# connect = EmailConnection("ZhongZi")
+# connect.setUser("qq", "muzi", "muzi")
+# connect.getUser()
+# connect.connection()
+#
+# oper = connect.connection()

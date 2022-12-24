@@ -1,12 +1,11 @@
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
-
 import os
 
 
 class SentEmail:
-    def __init__(self, user_message: list):
+    def __init__(self):
         self.message = MIMEMultipart('mixed')
         self.sender = ""
         self.receiver = ""
