@@ -67,17 +67,11 @@ class EmailConnection:
             decode(self.encode_format)
         return 1
 
-<<<<<<< HEAD:EmailControl/Email/EmailConnection.py
+
 # connect = EmailConnection("ZhongZi")
 # connect.setUser("qq", "muzi", "muzi")
 # connect.getUser()
 # connect.connection()
 #
 # oper = connect.connection()
-=======
 
-# connect = EmailConnection()
-# connect.setUser("qq", "muzi", "muzi")
-# connect.getUser()
-# connect.connection()
->>>>>>> e22a4c7efefe896efa77e31c07895a11407f69ef:ZhongZiEmail/Email/EmailConnection.py
