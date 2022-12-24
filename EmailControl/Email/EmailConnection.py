@@ -1,6 +1,7 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
-from EmailOperator import EmailOperator
+from .EmailOperator import EmailOperator  # 导入包内的其他py文件需要加上  .  以表示在该包内
+import os
 
 
 class EmailConnection:
@@ -13,12 +14,16 @@ class EmailConnection:
         self.base_key = passphrase
         self.public_key = key_pair.public_key().exportKey(pem_format, self.base_key)
         self.private_key = key_pair.exportKey(pem_format, self.base_key)
-        self.encode_format = 'ISO-8859-1'
-        self.user_name_path = "Config/usermessage.username"
-        self.user_pwd_path = "Config/usermessage.password"
-        open('../Config/public_key.pem', 'wb+').write(self.public_key)
-        open('../Config/private_key.pem', 'wb+').write(self.private_key)
-        self.server_address = {"qq": ("pop.qq.com:110", "smtp.qq.com:25"),
+        self.encode_format = 'ISO-8859-1'  # 测试后最稳妥的编码
+
+        # 因为包管理器对相对路径而言几乎没有管辖权，所以需要根据本文件的绝对路径去求文件的相对路径
+        folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # EmailControl的目录文件绝对路径
+        print(folder)
+        self.user_name_path = os.path.join(folder, "Config/usermessage.username")
+        self.user_pwd_path = os.path.join(folder, "Config/usermessage.password")
+        open(os.path.join(folder, 'Config/public_key.pem'), 'wb+').write(self.public_key)
+        open(os.path.join(folder, 'Config/private_key.pem'), 'wb+').write(self.private_key)
+        self.server_address = {"qq": ("pop.qq.com:110", "smtp.qq.com:465"),
                                "163": ("pop.163.com:110", "smtp.163.com:25")}
 
     def connection(self):
@@ -53,7 +58,7 @@ class EmailConnection:
         """
         with open(self.user_name_path, "r") as user_name_file:
             username_file_content = user_name_file.readlines()
-            self.username = username_file_content[0]
+            self.username = username_file_content[0][:-1] # python直接读入文件会将换行符读入
             if username_file_content[1] in self.server_address:
                 self.step = self.server_address[username_file_content[1]]
             else:
@@ -65,8 +70,8 @@ class EmailConnection:
         cipher = PKCS1_OAEP.new(RSA.importKey(self.private_key, self.base_key))
         self.passswd = cipher.decrypt(password_from_file). \
             decode(self.encode_format)
+        print(type(self.passswd))
         return 1
-
 
 # connect = EmailConnection("ZhongZi")
 # connect.setUser("qq", "muzi", "muzi")
@@ -74,4 +79,3 @@ class EmailConnection:
 # connect.connection()
 #
 # oper = connect.connection()
-

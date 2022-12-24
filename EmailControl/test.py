@@ -3,14 +3,15 @@ from Email.EmailConnection import *
 from Email.EmailType import *
 
 connect = EmailConnection("ZhangZi")
-connect.setUser("qq", "1013740747@qq.com", "cohqdyyjipmqbeed")
+connect.setUser("qq", "shikoumuzi@qq.com", "ljqothtkzyuhbdee")
 connect.getUser()
 
 emailoperator: EmailOperator = connect.connection()
 email = SentEmail()
-email.setSender("1013740747@qq.com")
-email.setReceiver("1013740747@qq.com")
+email.setContent("test")
+email.setSender("shikoumuzi@qq.com")
+email.setReceiver("gdykdxjdsytwzz@163.com")
 email.setSubject("python_test")
-email.setContent("李文智")
+
 
 print(emailoperator.send(email))

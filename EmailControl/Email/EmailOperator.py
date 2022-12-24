@@ -1,6 +1,6 @@
 import poplib
 import smtplib
-from EmailType import *
+from .EmailType import *
 from email.parser import Parser
 from email.header import decode_header
 from email.utils import parseaddr
@@ -18,16 +18,20 @@ class EmailOperator:
     def send(self, email: SentEmail):
         smtpobj = None
         try:
-            smtpobj = smtplib.SMTP_SSL(self.smtp_server)
-            smtpobj.connect(self.smtp_server, self.smtp_port)
+            smtpobj = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port)
+            # smtpobj.connect(self.smtp_server, self.smtp_port)
+            smtpobj.ehlo()  # 向Gamil发送SMTP 'ehlo' 命令
+            # smtpobj.starttls()
             smtpobj.login(self.username, self.passwd)
             smtpobj.sendmail(email.sender, email.receiver, email.getMessage().as_string())
             return 0
-        except smtplib.SMTPException:
+        except Exception as e:
+            print(e.__str__())
             return -1
         finally:
             smtpobj.quit()
         pass
 
     def receive(self):
+
         pass

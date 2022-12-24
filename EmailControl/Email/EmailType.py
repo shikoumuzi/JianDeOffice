@@ -1,6 +1,7 @@
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
+from email.header import Header
 import os
 
 
@@ -11,25 +12,26 @@ class SentEmail:
         self.receiver = ""
 
     def setSender(self, sender: str):
-        self.message['From'] = sender
+        self.message['From'] = Header(sender, "utf-8")
         self.sender = sender
 
     def getSender(self) -> str:
         return self.sender
 
     def setReceiver(self, receiver: str):
-        self.message['To'] = receiver
+        self.message['To'] = Header(receiver, "utf-8")
         self.receiver = receiver
 
     def getReceiver(self) -> str:
         return self.receiver
 
     def setSubject(self, subject: str):
-        self.message['Subject'] = subject
+        self.message['Subject'] = Header(subject, "utf-8")
 
     def setContent(self, content: str):
-        main_body = MIMEText(content, 'plain', 'utf-8')
-        self.message.attach(main_body)
+        self.message = MIMEText(content, 'plain', 'utf-8')
+        # main_body = MIMEText(content, 'plain', 'utf-8')
+        # self.message.attach(main_body)
 
     def setImage(self, image_path: str):
         if os.path.exists(image_path):
@@ -57,4 +59,7 @@ class SentEmail:
 
 class ReceivedEmail:
     def __init__(self):
+        self.sender = ""
+        self.receiver = ""
+        self.content = ""
         pass
