@@ -80,9 +80,3 @@ class EmailConnection:
         print(type(self.passswd))
         return 1
 
-# connect = EmailConnection("ZhongZi")
-# connect.setUser("qq", "muzi", "muzi")
-# connect.getUser()
-# connect.connection()
-#
-# oper = connect.connection()
